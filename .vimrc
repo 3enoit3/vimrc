@@ -516,7 +516,7 @@ function! EnhanceTTSSyntax()
 
 
     " SQL
-    syn keyword sqlStatement select SELECT from FROM insert INSERT into INTO delete DELETE where WHERE group GROUP update UPDATE set SET as AS order ORDER by BY and AND or OR
+    syn keyword sqlStatement select SELECT from FROM insert INSERT into INTO delete DELETE where WHERE group GROUP update UPDATE set SET as AS order ORDER by BY and AND or OR values VALUES
     hi def link sqlStatement Statement
 
     syn match sqlData "^-[ -]*-$"
@@ -675,6 +675,15 @@ function! s:ReplaceLines(...)
     endif
 endfunction
 command! -nargs=* ReplaceLines call s:ReplaceLines(<f-args>)
+
+" Grep
+function! s:Grep()
+    exe 'normal qaq'
+    g//y A
+    new
+    exe 'normal "Apgg2dd'
+endfunction
+command! Grep call s:Grep()
 
 " Tags
 function! s:OpenClassTag()
@@ -937,6 +946,18 @@ com! Doc :sp ~/vim/doc.txt
 " Undo
 com! Undo :GundoToggle
 
+" Persistent undo: http://stackoverflow.com/a/22676189
+if has('persistent_undo')
+    let myUndoDir = expand($HOME.'/.vim/undo')
+
+    " Create dir
+    call system('mkdir -p ' . myUndoDir)
+
+    " Activate
+    let &undodir = myUndoDir
+    set undofile
+endif
+
 " Highlight members
 com! HighlightMembers /\H_\w\+
 
@@ -1081,3 +1102,4 @@ endfunction
 " Tabs
 "syntax match Tab /\t/
 "hi Tab gui=underline guifg=blue ctermbg=blue
+
