@@ -150,22 +150,10 @@ vmap <leader>iw <Esc>l<leader>bv<leader>e
 omap <leader>iw :normal v<leader>iw<CR>
 
 """"""
-" Easymotion
+" Sneak
 
-" sneak
-map ;s <Plug>(easymotion-s2)
-
-map ;w <Plug>(easymotion-w)
-map ;b <Plug>(easymotion-b)
-
-map ;j <Plug>(easymotion-j)
-map ;k <Plug>(easymotion-bd-k)
-" keep cursor in place
-let g:EasyMotion_startofline = 0
-
-map <leader>w <Plug>(easymotion-bd-w)
-map <leader>j <Plug>(easymotion-bd-jk)
-
+" workaround NFA error
+set regexpengine=1
 
 """"""
 " Gvim
@@ -179,8 +167,9 @@ if has("gui_running")
     "set guifont=-*-terminesspowerline-*-*-*-*-*-*-*-*-*-*-*-*
     "set guifont=Roboto\ Mono\ for\ Powerline\ 12
     "set guifont=-misc-hack-medium-r-normal--12-0-0-0-m-0-iso10646-*
-    set guifont=-*-gohufont-medium-*-*-*-14-*-*-*-*-*-*-*
+    "set guifont=-*-gohufont-medium-*-*-*-14-*-*-*-*-*-*-*
     "set guifont=-*-fixed-medium-*-*-*-*-*-*-*-*-*-*-*
+    set guifont=Roboto\ Mono\ for\ Powerline\ 10
 
     " Show special characters
     set encoding=utf-8
@@ -225,7 +214,7 @@ endif
 set ttymouse=xterm2
 
 " Mouse toggle
-nmap ,m :call ToggleMouse()<CR>
+nmap <leader>m :call ToggleMouse()<CR>
 
 " Do not use Ex mode: http://stackoverflow.com/questions/1269689/to-disable-entering-ex-mode-in-vim
 map Q <nop>
@@ -266,11 +255,18 @@ set shiftround
 "set smarttab
 
 " Use space for <tab>: http://vimdoc.sourceforge.net/htmldoc/options.html#'expandtab'
-set expandtab
+autocmd FileType * set expandtab
+autocmd FileType python set noexpandtab
 
 " Show tabs and trailing spaces: http://vimdoc.sourceforge.net/htmldoc/options.html#'listchars'
-set listchars=tab:>-,trail:-
-set listchars+=extends:+,precedes:+
+set listchars=tab:>-,trail:-,eol:$,extends:+,precedes:+
+
+function! s:ShowAllChars()
+    e ++ff=unix
+    set list
+endfunction
+command! ShowAllChars call s:ShowAllChars()
+
 
 """"""
 " Maps
@@ -299,8 +295,14 @@ nnoremap gp `[v`]
 " Switch easily between buffers
 map <f7> :bp<CR>
 map <f8> :bn<CR>
-map <A-,> :bp<CR>
-map <A-.> :bn<CR>
+
+" map <ESC>OD <C-Left>
+" map <ESC>OC <C-Right>
+" map! <ESC>OD <C-Left>
+" map! <ESC>OC <C-Right>
+"
+" map <C-Left> :bp<CR>
+" map <C-Right> :bn<CR>
 
 map <f3> :tabp<CR>
 map <f4> :tabn<CR>
@@ -331,19 +333,25 @@ map z<Up> zk
 map z<Down> zj
 
 " Motion
-map <C-Up> <C-U>
-map <C-Down> <C-D>
-map <A-Up> 3k
-map <A-Down> 3j
-"map <S-Up> { -- used for selection
-"map <S-Down> } -- used for selection
 
-map <C-Left> ^
-map <C-Right> $
-map <A-Left> B
-noremap <A-Right> W
-map <S-Left> ge
-map <S-Right> e
+" using terminal captured with "sed -n l"
+
+" map <ESC><ESC>[A <A-Up>
+" map <ESC><ESC>[B <A-Down>
+" map! <ESC><ESC>[A <A-Up>
+" map! <ESC><ESC>[B <A-Down>
+"
+" map <ESC><ESC>[D <A-Left>
+" map <ESC><ESC>[C <A-Right>
+" map! <ESC><ESC>[D <A-Left>
+" map! <ESC><ESC>[C <A-Right>
+"
+" map <A-Up> 3k
+" map <A-Down> 3j
+" map <A-Left> B
+" noremap <A-Right> W
+" map <S-Left> ge
+" map <S-Right> e
 
 " Buffer switch hpp/cpp
 map <leader>s :FSHere<CR>
@@ -742,10 +750,14 @@ au BufReadPost quickfix  setlocal modifiable
             \ | let @/=g:qf_tmp
             \ | setlocal nomodifiable
 
+" XML folding: http://vim.wikia.com/wiki/Vim_as_XML_Editor
+let g:xml_syntax_folding=1
+au FileType xml setlocal foldmethod=syntax
+
+
 """""""""""
 " Plugins "
 """""""""""
-
 
 " See <url:vimhelp:python.vim>
 let g:python_highlight_all = 1
@@ -862,8 +874,11 @@ command! Clean call CleanBuffers()
 " Close buffer
 map <leader>d :BD<CR>
 
-" Search for a line
-map <leader>l :Unite line -ignorecase<CR>i
+" Search for a line (mark current line before searching, to go back with `` or ''
+map <leader>l m'm`:Unite line -ignorecase<CR>i
+
+" Deactivate unite default behavior (skip first candidate when cursor is on the prompt line) and keep first candidate
+let g:unite_enable_auto_select=0
 
 " Prevent case issues when saving
 command! W :w

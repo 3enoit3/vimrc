@@ -41,14 +41,8 @@ Plugin 'bkad/CamelCaseMotion'
 " C/C++ omni-completion with ctags
 Plugin 'vim-scripts/OmniCppComplete'
 
-" Easy motion (\\w -> suggests motion possibilities)
-Plugin 'easymotion/vim-easymotion'
-
 " Sneak motion (sea -> eak motion)
 Plugin 'justinmk/vim-sneak'
-
-" Multiple cursor
-Plugin 'terryma/vim-multiple-cursors'
 
 " New objects
 Plugin 'wellle/targets.vim'
@@ -56,14 +50,8 @@ Plugin 'wellle/targets.vim'
 " Args
 Plugin 'vim-scripts/argtextobj.vim'
 
-" Fuzzy finder
-Plugin 'kien/ctrlp.vim'
-
-" Other fuzzy
+" Fuzzy line finder
 Plugin 'Shougo/unite.vim'
-
-" Other fuzzy
-Plugin 'junegunn/fzf'
 
 
 " To see..
@@ -81,5 +69,11 @@ Plugin 'derekwyatt/vim-fswitch'
 " Plugin 'fholgado/minibufexpl.vim'
 
 " Toggle the quickfix window -> home modified (dos2unix)
-"Plugin 'vim-scripts/QFixToggle'
+" Plugin 'vim-scripts/QFixToggle'
+
+" Easy motion (\\w -> suggests motion possibilities)
+" Plugin 'easymotion/vim-easymotion'
+
+" Multiple cursor
+" Plugin 'terryma/vim-multiple-cursors'
 
