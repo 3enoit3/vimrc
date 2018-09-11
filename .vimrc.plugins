@@ -1,0 +1,270 @@
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" List
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+call plug#begin($MYVIMDIR . '/.vim/plugged')
+
+
+" NERD tree
+Plug 'scrooloose/nerdtree'
+
+" NERD commenter
+Plug 'scrooloose/nerdcommenter'
+
+" delete a buffer without closing the window
+Plug 'vim-scripts/bufkill.vim'
+
+" visualize undo tree
+Plug 'sjl/gundo.vim'
+
+" improvement over standard match paren
+Plug 'vim-scripts/matchparenpp'
+
+" Latest modified files
+Plug 'vim-scripts/mru.vim'
+
+" Improve <tab> completion
+Plug 'ervandew/supertab'
+
+" Tagbar
+Plug 'majutsushi/tagbar'
+
+" Colors
+" Plug 'godlygeek/csapprox'
+
+
+" Most probably..
+
+" Smarter tab line
+Plug 'vim-airline/vim-airline'
+
+" Bookmark
+"Plug 'MattesGroeger/vim-bookmarks'
+
+" Repeat motion
+" Plug 'vim-scripts/repeatable-motions.vim'
+
+" Surround
+Plug 'tpope/vim-surround'
+
+" CamelCase motion
+Plug 'bkad/CamelCaseMotion'
+
+" C/C++ omni-completion with ctags
+Plug 'vim-scripts/OmniCppComplete'
+
+" Sneak motion (sea -> eak motion)
+Plug 'justinmk/vim-sneak'
+
+" New objects
+Plug 'wellle/targets.vim'
+
+" Args
+"Plug 'vim-scripts/argtextobj.vim'
+
+" Fuzzy finder
+"Plug 'kien/ctrlp.vim'
+
+" Other fuzzy
+Plug 'Shougo/unite.vim'
+
+" Marks
+"Plug 'kshenoy/vim-signature'
+Plug 'Tumbler/highlightMarks'
+
+" Buffers
+Plug 'vim-scripts/QuickBuf'
+
+" To see..
+
+" Folding
+"Plug 'LucHermitte/VimFold4C'
+
+" Fswitch: hpp/cpp
+" Plug 'derekwyatt/vim-fswitch'
+
+" Ack -> better with the shell?
+"Plug 'mileszs/ack.vim'
+
+" buffer explorer in a tab-like fashion -> home modified
+" Plug 'fholgado/minibufexpl.vim'
+
+" Toggle the quickfix window -> home modified (dos2unix)
+"Plug 'vim-scripts/QFixToggle'
+
+
+call plug#end()
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Settings
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+"" NERD tree
+
+" nice tree display
+" let g:NERDTreeDirArrows=0
+
+let NERDTreeIgnore = ['^.*\(\.cpp\|\.h\|\.hpp\|\.xml\|\.c\)\@<!$[[file]]', '\<\(bin\|lib\|examples\|doc\|etc\|DOMINO_COMMON_2\|Win32\)\>[[dir]]']
+
+command! Files NERDTreeToggle
+map <leader>f :NERDTreeFind<cr>
+
+"" NERD commenter
+
+" Duplicate and comment
+map <leader>C mRyyP<space>cc`R
+
+"" Bufkill
+
+" clean current
+map <leader>d :BD<CR>
+
+"" Gundo
+
+com! Undo :GundoToggle
+
+"" MRU
+
+command! Recent MRU
+map RR :MRU<CR>
+
+"" Supertab
+
+" enable enhanced longest completion
+let g:SuperTabLongestEnhanced=1
+
+" highlight first match
+let g:SuperTabLongestHighlight=1
+
+" select up to bottom order
+let g:SuperTabDefaultCompletionType= "<c-n>"
+
+"" Tagbar
+
+" disable tooltips
+" set noballooneval
+
+command! Symbols TagbarToggle
+
+"" Airline
+
+" let g:airline#extensions#tabline#enabled = 1
+let g:airline_powerline_fonts = 1
+let g:airline#extensions#tabline#fnamemod = ':t'
+
+if has("gui_running")
+    " remove "Thanks for flying Vim"
+    set titlestring=%t
+else
+    " deactivate vim-airline to use my_rstatusline (file position slider)
+"    let g:loaded_airline = 1
+endif
+
+"" CamelCaseMotion
+
+" activate plugin
+" call camelcasemotion#CreateMotionMappings('<leader>')
+
+" i<leader>w also includes next upper case char in the selection ("CamelC"): let <leader>iw selects the inside word only ("Camel")
+vmap <leader>iw <Esc>l<leader>bv<leader>e
+omap <leader>iw :normal v<leader>iw<CR>
+
+"" OmniCppComplete
+
+let OmniCpp_NamespaceSearch = 1
+let OmniCpp_GlobalScopeSearch = 1
+let OmniCpp_ShowAccess = 1
+let OmniCpp_ShowPrototypeInAbbr = 1
+let OmniCpp_MayCompleteDot = 1
+let OmniCpp_MayCompleteArrow = 1
+let OmniCpp_MayCompleteScope = 1
+let OmniCpp_DefaultNamespaces = ["std", "_GLIBCXX_STD"]
+
+" automatically open and close the popup menu / preview window
+au CursorMovedI,InsertLeave * if pumvisible() == 0|silent! pclose|endif
+set completeopt=menuone,menu,longest,preview
+" set ofu=syntaxcomplete#Complete
+au BufNewFile,BufRead,BufEnter *.cpp,*.hpp,*.h set omnifunc=omni#cpp#complete#Main
+
+" ignore case
+let g:omni_syntax_ignorecase=0
+
+"" Easymotion
+
+" keep cursor in place
+let g:EasyMotion_startofline = 0
+
+" stay on screen
+let g:EasyMotion_off_screen_search = 0
+
+"map ;s <Plug>(easymotion-s2)
+
+"map ;w <Plug>(easymotion-w)
+"map ;b <Plug>(easymotion-b)
+
+"map ;j <Plug>(easymotion-j)
+"map ;k <Plug>(easymotion-bd-k)
+
+map <leader>w <Plug>(easymotion-bd-w)
+map <leader>j <Plug>(easymotion-bd-jk)
+
+"" Unite
+
+" search for a line
+map <leader>l :Unite line -ignorecase<CR>i
+
+"" Ack
+
+" let g:ack_default_options = " -H --nocolor --nogroup --column"
+
+"" Taglist
+
+if has("win32")
+    let Tlist_Ctags_Cmd="ctags.exe"
+elseif has("unix")
+    let Tlist_Ctags_Cmd="ctags"
+endif
+
+"" Minibuf
+
+let g:miniBufExplUseSingleClick = 1
+
+"" Bookmarks
+
+" let g:bookmark_highlight_lines = 1
+
+"" ConqueTerm
+
+" command! Shell ConqueTerm zsh
+
+"" QFix
+
+map <leader>q :QFix<CR>
+
+"" FSwitch
+
+" map <leader>s :FSHere<CR>
+
+"" Sneak
+
+let g:sneak#s_next = 1
+
+"" Ag
+
+" the Silver Searcher
+if executable('ag')
+  " Use ag over grep
+  set grepprg=ag\ --nogroup\ --nocolor
+endif
+
+command -nargs=+ -complete=file -bar Ag silent! grep! <args>|cwindow|redraw!
+"nnoremap \ :Ag<SPACE>
+
+"" Quickbuf
+map <A-UP> <F4>
+map <A-DOWN> <F4>
+map <home> <F4>
+map <end> <F4>
+

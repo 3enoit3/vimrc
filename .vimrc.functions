@@ -1,0 +1,705 @@
+
+""" Delete non selected text
+function! KeepSelected() range
+    " save selection
+    let b:DeleteAllButSelected_begin = a:firstline
+    let b:DeleteAllButSelected_end = a:lastline
+
+    " yank selection, remove all and paste yanked lines
+    exe b:DeleteAllButSelected_begin . "," . b:DeleteAllButSelected_end . "y s"
+    normal gg"kdG"sPG"_ddgg
+endfunction
+command! KeepSelected call KeepSelected()
+vmap od :KeepSelected<CR>
+
+function! RestoreSelected()
+    " cut new content, restore all
+    normal gg"sdG"kP
+
+    " delete original selection and replace by yanked content
+    exe b:DeleteAllButSelected_begin . "," . b:DeleteAllButSelected_end . "d _"
+    normal "sP
+endfunction
+command! RestoreSelected call RestoreSelected()
+
+""" Diff
+function! s:DiffWithSaved()
+    " see <url:http://vim.sf.net/tips/tip.php?tip_id=1030>
+    let filetype=&ft
+    diffthis
+    vnew | r # | normal 1Gdd
+    diffthis
+    exe "setlocal bt=nofile bh=wipe nobl noswf ro ft=" . filetype
+endfunction
+command! DiffX call s:DiffWithSaved()
+
+function! s:DiffWithCheckedOut()
+    "  let cvs_version = BASE
+    "  if a:version != ''
+    "    let cvs_version = a:version
+    "  fi
+    "  echomsg a:cvs_version
+
+    let filetype=&ft
+    diffthis
+    " new | r # | normal 1Gdd - for horizontal split
+    vnew | r !cvs up -pr BASE #
+    normal 1Gd6d
+    diffthis
+    exe "setlocal bt=nofile bh=wipe nobl noswf ro ft=" . filetype
+endfunction
+command! CVSDiffX call s:DiffWithCheckedOut()
+
+""" Mouse
+function! ToggleMouse()
+    if &mouse == 'a'
+        set mouse=
+    else
+        set mouse=a
+    endif
+    echon "mouse=" &mouse
+endfunction
+nmap <leader>M :call ToggleMouse()<CR>
+
+""" Includes
+function! SmartInclude()
+    let next = nr2char( getchar( 0 ) )
+    if next == '"'
+        return "#include \".hpp\"\<Left>\<Left>\<Left>\<Left>\<Left>"
+    endif
+    if next == '>'
+        return "#include <>\<Left>"
+    endif
+    return "#include <.hpp>\<Left>\<Left>\<Left>"
+endfunction
+
+""" Backup
+function! s:Backup()
+    " Ask for a comment
+    call inputsave()
+    let fname_comment = input('Add a comment to the backup? ')
+    call inputrestore()
+    if !empty(fname_comment)
+        let fname_comment= '.' . fname_comment
+    endif
+
+    " Save file
+    let fname = expand('%:p') . '.bak.' . strftime('%Y%m%d.%H%M%S') . fname_comment
+    silent execute 'write' fname
+    echomsg 'Wrote' fname
+endfunction
+command! Backup call s:Backup()
+
+""" Refactor
+function! PrepareRefactorInP()
+    exe 'normal mr'
+    exe 'normal "pyiw'
+    exe 'normal `r'
+endfunction
+map <leader>S :call PrepareRefactorInP()<CR>
+
+function! RefactorP()
+    exe 'normal "ryiw'
+    exe 'bufdo %s/\<' . @p . '\>/' . @r . '/gce'
+endfunction
+map <leader>R :call RefactorP()<CR>
+
+function! Refactor()
+    exe 'normal "ryiw'
+    exe 'bufdo %s//' . @r . '/gce'
+endfunction
+map <leader>r :call Refactor()<CR>
+
+""" Easy replace
+function! s:ReplaceLines(...)
+    """ Pattern
+    let pattern = a:1
+
+    " Escape
+    let pattern = substitute(pattern, '\\#', '__hash__', 'g')
+    let pattern = substitute(pattern, '\\-', '__dash__', 'g')
+
+    let capture_count = strlen( substitute(pattern, '[^#]', '', 'g') )
+
+    " Insert spaces between tokens (twice to workaround #### where only #\s##\s# is added)
+    let pattern = substitute(pattern, '\([-#]\)\([-#]\)', '\1\\s\2', 'g')
+    let pattern = substitute(pattern, '\([-#]\)\([-#]\)', '\1\\s\2', 'g')
+
+    " Default end
+    if pattern !~ '\$$'
+        " Stop after a space if not explicit
+        if pattern =~ '[-#]'
+            let pattern = pattern . '\s'
+        endif
+        let pattern = pattern . '.*$'
+    endif
+
+    " Change .* to be non greedy
+    let pattern = substitute(pattern, '\.\*', '.\\{__dash__}', 'g')
+
+    " Capture
+    let pattern = substitute(pattern, '#', '\\s*\\(\\S\\+\\)\\s*', 'g')
+    let pattern = substitute(pattern, '-', '\\s*\\S\\+\\s*', 'g')
+
+    " Unescape
+    let pattern = substitute(pattern, '__hash__', '#', 'g')
+    let pattern = substitute(pattern, '__dash__', '-', 'g')
+
+    """ Replace
+    let replace = ""
+
+    " Default capture if any
+    if a:0 == 2
+        let replace = a:2
+    else
+        if capture_count > 0
+            let replace = '\1'
+            let i = 2
+            while i <= capture_count
+                let replace = replace . ' \' . i
+                let i = i + 1
+            endwhile
+        endif
+    endif
+
+    """ Command
+    let sed_str = '%s/^' . pattern . '/' . replace . '/'
+
+    " Execute on confirm
+    if confirm(sed_str . " - Confirm apply?", "&Yes\n&No", 1) == 1
+        exe sed_str
+    endif
+endfunction
+command! -nargs=* ReplaceLines call s:ReplaceLines(<f-args>)
+
+""" Grep
+function! s:Grep()
+    exe 'normal qaq'
+    g//y A
+    new
+    exe 'normal "Apgg2dd'
+endfunction
+command! Grep call s:Grep()
+
+command! VGrep vimgrep // %
+
+""" Clean file
+function! s:CleanFile()
+    " mark position
+    normal mR
+
+    " one single empty line at the beginning
+    normal gg
+    let s:current_line = getline('.')
+    while( match(s:current_line, '^\s*$') == 0 )
+        normal dd
+        let s:current_line = getline('.')
+    endwhile
+    normal O
+
+    " one single empty line at the end
+    normal G
+    let s:current_line = getline('.')
+    while( match(s:current_line, '^\s*$') == 0 )
+        normal dd
+        let s:current_line = getline('.')
+    endwhile
+    normal o
+
+    " restore position
+    normal `R
+endfunction
+command! CleanFile call s:CleanFile()
+map <leader>F :CleanFile<CR>
+
+" CleanLine
+function! s:CleanLine()
+    " mark position
+    normal mR
+
+    " format spaces
+    exe "normal ^v$:s/\\%V\\s\\+/ /ge\<CR>"
+    s/(\s*/(/ge
+    s/\s*)/)/ge
+    s/\s*,\s*/, /ge
+    s/\s\+$//e
+
+    " restore position
+    normal `R
+endfunction
+command! CleanLine call s:CleanLine()
+map <leader>L :CleanLine<CR>
+
+" CleanParen
+function! s:CleanParen()
+    " mark position
+    normal mR
+
+    normal vi("rd
+    let s:str = getreg('r')
+    let s:clean_str = substitute(s:str, '^\s*\(.\{-}\)\s*$', '\1', '')
+    if s:str =~ '^\s.*$'
+        call setreg('r', s:clean_str)
+    else
+        call setreg('r', ' ' . s:clean_str . ' ')
+    endif
+    normal "rP
+
+    " restore position
+    normal `R
+endfunction
+command! CleanParen call s:CleanParen()
+map <leader>E :CleanParen<CR>
+
+""" Tags
+function! s:OpenClassTag()
+    let aClassTag = expand("<cword>")
+    let aTags = taglist('^'.aClassTag.'$')
+
+    " Open it by default if there is a single tag
+    if len(aTags) == 1
+        execute 'edit ' . aTags[0]['filename']
+        execute 'silent normal! ' . aTags[0]['cmd'] . "\rzt"
+    endif
+
+    " Open the class tag (if any) in case of multiple options
+    let aTags = filter(aTags, 'v:val["kind"] == "c"')
+    if len(aTags) == 1
+        execute 'edit ' . aTags[0]['filename']
+        execute 'silent normal! ' . aTags[0]['cmd'] . "\rzt"
+    else
+        echo "No tags found for " . aClassTag
+    endif
+endfunction
+command! OpenClassTag call s:OpenClassTag()
+map <leader>] :OpenClassTag<cr>
+
+function! s:OpenTag()
+    let aStr = expand("<cword>")
+    let aTags = taglist(aStr)
+
+    if len(aTags) > 0
+        for entry in aTags
+            echo "Found " . entry['name'] . " (" . entry['kind'] . ")"
+        endfor
+    else
+        echo "No tags found for " . aStr
+    endif
+endfunction
+command! OpenTag call s:OpenTag()
+
+""" Folding
+let g:my_fold_mode=0
+function! CppFolding()
+    if( g:my_fold_mode == 0)
+        set foldmethod=syntax
+        set foldlevel=3
+
+        set foldenable
+
+        let g:my_fold_mode=1
+    else
+        set nofoldenable
+
+        set foldmethod=manual
+        exe "normal zE"
+
+        let g:my_fold_mode=0
+    endif
+endfunction
+command! Folds call CppFolding()
+
+" Set a nicer foldtext function: http://vim.wikia.com/wiki/Customize_text_for_closed_folds
+set foldtext=MyCppFoldText()
+function! MyCppFoldText()
+    let line = getline(v:foldstart)
+    if match( line, '^[ \t]*\(\/\*\|\/\/\)[*/\\]*[ \t]*$' ) == 0
+        let initial = substitute( line, '^\([ \t]\)*\(\/\*\|\/\/\)\(.*\)', '\1\2', '' )
+        let linenum = v:foldstart + 1
+        while linenum < v:foldend
+            let line = getline( linenum )
+            let comment_content = substitute( line, '^\([ \t\/\*]*\)\(.*\)$', '\2', 'g' )
+            if comment_content != ''
+                break
+            endif
+            let linenum = linenum + 1
+        endwhile
+        let sub = initial . ' ' . comment_content
+    else
+        let sub = line
+        let startbrace = substitute( line, '^.*{[ \t]*$', '{', 'g')
+        if startbrace == '{'
+            let line = getline(v:foldend)
+            let endbrace = substitute( line, '^[ \t]*}\(.*\)$', '}', 'g')
+            if endbrace == '}'
+                let sub = sub.substitute( line, '^[ \t]*}\(.*\)$', '...}\1', 'g')
+            endif
+        endif
+    endif
+
+    " Build folded line count header
+    let n = v:foldend - v:foldstart + 1
+    let info = '[' . n . ']'
+
+    " Get sizes to properly align {...}s
+    let info_size = strlen(info)
+    let sub_indent = match(sub, '[^ \t]')
+
+    " Overide the beginning if there is enough space, or concat them
+    if( info_size > sub_indent )
+        let sub = info . strpart(sub, sub_indent)
+    else
+        let sub = info . strpart(sub, info_size)
+    endif
+
+    return sub
+endfunction
+
+""" CVS
+function! GoToConflicts()
+    syn match cvsConflict "^=======$\|^<<<<<<< .*$\|^>>>>>>> .*$"
+    hi def link cvsConflict Error
+
+    exe "normal gg"
+    exe "/^=======$\\|^<<<<<<< .*$\\|^>>>>>>> .*$"
+endfunction
+command! Conflicts call GoToConflicts()
+
+""" Syntax
+function! EnhanceCppSyntax()
+    "syn match cppFuncDef "\s*\zs\h\w*\ze\s*([^)]*\()\s*\(const\)\?\)\?\(\s*{\)\?\s*$"
+    " space* {start capture} alpha alphanum {end capture} space* ( something [) space* [const]?]? [space* {]? space* end_of_line
+    " almost: syn match cppFuncDef "[\s:]\zs\h\w*\ze\s*([^)]*\()\s*\(const\)\?\s*\(;\|{.*\)\?\|,\)\s*$"
+    " conflict w keywords: syn match cppFuncDef "\w\s\+\(\w\+::\)\?\zs\h\w*\ze\s*([^)]*\()\s*\(const\)\?\s*\(;\|{.*\)\?\|,\)\s*$"
+    "syn match cppFuncDef "\s\+\(\w\+::\)\?\zs\h\w*\ze\s*([^)]*\()\s*\(const\)\?\s*\(;.*\|{.*\)\?\|,\s*\)$"
+    " space+ [alphanum+ ::]? {start capture} alpha alphanum* {end capture} space* ( something [) space* [const]? [; .* or } .* or , space*] end_of_line
+    syn match cppFuncDef "[: \t]\zs\h\w*\ze\s*([^)]*\()\s*\(const\)\?\s*\(;.*\|{.*\)\?\|,\s*\)$"
+    " [: or space or tab ] {start capture} alpha alphanum* {end capture} space* ( something [) space* [const]? [; .* or } .* or , space*] end_of_line
+    " syn match cppFuncDef "^\s*\(virtual\s\+\)\?\h\w*\s\+\(\h\w*::\)\?\zs\h\w*\ze\s*([^)]*\()\s*const\|)\s*;\|,\)\s*$"
+    " syn match cppFuncDef "^\s*\(virtual\s\+\|static\s\+\)\?\h\w*\s\+\(\h\w*::\)\?\zs\h\w*\ze\s*([^)]*\()\s*\(const\)\?;\?\|,\)\s*$"
+    " syn match cppFuncDef "^\h\w*\s\+\zs\h\w*\ze()$"
+    hi def link cppFuncDef Function
+
+    syn match cppRange "\zs\w\+\ze::"
+    hi def link cppRange Special
+
+    syn match cppUP_SQL "\zsUP_SQL\w*\ze"
+    hi def link cppUP_SQL Type
+    syn match cppUP_TSQ "\zsUP_TSQ\w*\ze"
+    hi def link cppUP_TSQ Type
+    syn match cppAMD "\zsAMD_\w*\ze"
+    hi def link cppAMD Type
+    syn match cppTemplate "< \?\zs\w*\ze \?> "
+    hi def link cppTemplate Type
+    syn match cppTemplate "< \?\zs\w* \?, \?\w*\ze \?> "
+    hi def link cppTemplate Type
+    syn match cppTrace "\zsTRC_\L*\ze("
+    hi def link cppTrace Special
+
+    syn match cppDCS_WARN "\zsDCS_WARNING_\w*\ze"
+    hi def link cppDCS_WARN Special
+    syn match cppDCS_ERR "\zsDCS_ERROR_\w*\ze"
+    hi def link cppDCS_ERR Special
+    syn match cppDCS "\zsDCS_\w*\ze"
+    hi def link cppDCS Special
+
+    syntax region tts_string start=/\v"/ skip=/\v\\./ end=/\v"/
+    hi def link tts_string String
+endfunction
+
+function! EnhanceTTSSyntax()
+    " Framework
+    syn keyword scnDataSeparator __DATA__
+    hi def link scnDataSeparator Error
+
+    syn match scnData "^>>.*$"
+    syn match scnData "^<<.*$"
+    hi def link scnData Include
+
+    syn match scnFunction "^\s*\w\+\s*{\s*$"
+    syn match scnFunction "^\s*\w\+\s*{}\s*;\s*$"
+    hi def link scnFunction Function
+
+    syn keyword scnParameter wait set compare no_org
+    hi def link scnParameter Statement
+
+    syn keyword scnSpecialParameter EOD EOS EOT SQL messages triggers target
+    hi def link scnSpecialParameter Special
+
+    " SQL
+    syn keyword sqlStatement select SELECT from FROM insert INSERT into INTO delete DELETE where WHERE group GROUP update UPDATE set SET as AS order ORDER by BY and AND or OR values VALUES
+    hi def link sqlStatement Statement
+
+    syn match sqlData "^-[ -]*-$"
+    hi def link sqlData Comment
+    "runtime! syntax/sql.vim
+
+    " Shell
+    syn keyword shStatement break cd chdir continue eval exec exit kill newgrp pwd read readonly return shift test trap ulimit umask wait echo export
+    syn keyword shConditional if elif else then fi for in do done
+    syn keyword kshStatement autoload bg false fc fg functions getopts hash history integer jobs let nohup printf r stop suspend times true type unalias whence
+    syn keyword kshStatement2 cat chmod clear cp du egrep expr fgrep find grep install killall less ls mkdir mv nice printenv rm rmdir sed sort strip stty tail touch tput
+    syn keyword bashStatement bind builtin dirs disown enable help local logout popd pushd shopt source
+
+    hi def link shStatement Statement
+    hi def link shConditional Statement
+    hi def link kshStatement Statement
+    hi def link kshStatement2 Statement
+    hi def link bashStatement Statement
+
+    " EDI
+    syn match ediMsg "^.*&$"
+    syn match ediMsg "^[^']*'$"
+    hi def link ediMsg String
+
+    " Comments
+    syn match shComment "^\#.*$"
+    hi def link shComment Comment
+    syn match tts_comment "^\'\'.*$"
+    hi def link tts_comment Comment
+
+    syn match tts_title "^\'[^\'].*$\|^\'$"
+    hi def link tts_title Title
+
+    syntax region tts_string start=/\v"/ skip=/\v\\./ end=/\v"/
+    hi def link tts_string String
+endfunction
+
+" Learning
+function! SportMode()
+    noremap <del> <nop>
+    noremap <backspace> <nop>
+    noremap <up> <nop>
+    noremap <down> <nop>
+    noremap <right> <nop>
+    noremap <left> <nop>
+endfunction
+command! SportMode call SportMode()
+
+" Narrow
+function! Narrow() range
+    set foldenable
+    set foldmethod=manual
+    normal ggzf`<
+    normal `>jzfG
+endfunction
+command! Narrow call Narrow()
+vmap <leader>w Narrow
+
+" Markdonwn
+function! FormatMarkdown()
+    " headings
+    %s/^\s*\(\#\+\)\s*\(.*\)$/\1 \2/e
+    %s/^\s*\(-\+\)\s*\(.*\)$/\1 \2/e
+    %s/^\s*\(\*\+\)\s*\(.*\)$/\1 \2/e
+    %s/^\s*\(+\+\)\s*\(.*\)$/\1 \2/e
+endfunction
+command! FormatMarkdown call FormatMarkdown()
+
+function! GetHeadingLevel(...)
+    let heading = substitute( getline(a:1), '^\s*\(#*\).*$', '\1', '')
+    return strlen(heading)
+endfunction
+
+function! GetFoldLevel(...)
+    let b:lnum = a:1
+    while b:lnum > 0
+        let b:depth = GetHeadingLevel(b:lnum)
+        if b:depth > 0
+            return b:depth
+        endif
+        let b:lnum -= 1
+    endwhile
+    return 0
+endfunction
+
+" function! FoldMarkdown()
+"     normal zEmRgg
+"     while line('.') < line('$')
+"         let b:heading = substitute(getline('.'), '^\s*\(#*\).*$', '\1', '')
+"         if strlen(b:heading) > 0
+"             normal
+"
+"     endwhile
+"     normal `R
+" endfunction
+
+function! SynMarkdown()
+    syn match mdTitleH1 "^\s*#[^#].*$" contains=mdTag
+    syn match mdTitleH2 "^\s*#\{2}[^#].*$" contains=mdTag
+    syn match mdTitleH3 "^\s*#\{3}[^#].*$" contains=mdTag
+    syn match mdTitleH4 "^\s*#\{4}[^#].*$" contains=mdTag
+    syn match mdTitleH5 "^\s*#\{5}[^#].*$" contains=mdTag
+
+    syn region mardownH1 start="^\s*#[^#]" end="\(^\ze\s*#[^#]\|\%$\)" transparent fold
+    syn region mardownH2 start="^\s*#\{2}[^#]" end="^\ze\s*#\{1,2}[^#]" transparent fold
+    syn region mardownH3 start="^\s*#\{3}[^#]" end="^\ze\s*#\{1,3}[^#]" transparent fold
+    syn region mardownH4 start="^\s*#\{4}[^#]" end="^\ze\s*#\{1,4}[^#]" transparent fold
+    syn region mardownH5 start="^\s*#\{5}[^#]" end="^\ze\s*#\{1,5}[^#]" transparent fold
+
+    syn match mdWarning "^\s*!.*$"
+    syn match mdLink "@.*:\d\+:.*$"
+    syn match mdUrl "https\?://\S\+"
+    syn match mdOpenQuestion "^.*?\s*$"
+    syn match mdTag "\[\w\+\]"
+
+    hi def link mdTitleH1 Function
+    hi def link mdTitleH2 Identifier
+    hi def link mdTitleH3 Comment
+    hi def link mdTitleH4 Statement
+    hi def link mdTitleH5 Keyword
+
+    hi def link mdLink String
+    hi def link mdUrl String
+    hi def link mdWarning Include
+    hi def link mdOpenQuestion Special
+    hi def link mdTag Error
+
+    map <leader>j zcddzjP
+    map <leader>k zcddzkzkp
+endfunction
+
+" Windows integration
+function! ToUnix(path)
+    return system('cygpath -u ''' . a:path . '''')
+endfunction
+function! ToWin(path)
+    return system('cygpath -w ''' . a:path . '''')
+endfunction
+
+command! WinOpenFrom :execute 'e ' . ToUnix(@+)
+command! WinOpenTo :silent execute '!cygstart ''' . expand('%:p') . '''' | execute ':redraw!'
+
+" My own search
+
+"python << EOF
+"import vim
+"import requests
+
+"def codeGrep(params):
+"    resp = requests.get('http://127.0.0.1:8000/all?contains=' + params)
+"    if resp.status_code != 200:
+"        # This means something went wrong.
+"        raise ApiError('GET /tasks/ {}'.format(resp.status_code))
+"    resp_json = resp.json()
+
+"    print "Found {} locations".format( len(resp_json) )
+"    locations = []
+"    for found in resp_json:
+"        locations.append({
+"        'filename': str(found["file"]),
+"        'lnum': found["line"],
+"        'text': str(found["content"]).replace("\'", "") if "content" in found else "" })
+
+"    vim.eval('setqflist({})'.format( repr(locations) ))
+"    vim.command('cwindow')
+"EOF
+
+function! s:LoadCodebase()
+    if !exists('g:CodeGrepPython_Loaded')
+        echon "Loading codebase.. "
+        source ~/.vim/codebase.vim
+
+        command! -nargs=* Code py pyCodeGrep(<f-args>)
+        command! -nargs=* File py pyFileGrep(<f-args>)
+        command! -nargs=* All py pyAllGrep(<f-args>)
+    endif
+    let g:CodeGrepPython_Loaded=1
+endfunction
+
+function! s:CodeGrep(...)
+    call s:LoadCodebase()
+    execute 'Code ' . join(a:000, ' ')
+endfunction
+command! -nargs=* Code call s:CodeGrep(<f-args>)
+
+function! s:FileGrep(...)
+    call s:LoadCodebase()
+    execute 'File ' . join(a:000, ' ')
+endfunction
+command! -nargs=* File call s:FileGrep(<f-args>)
+
+function! s:AllGrep(...)
+    call s:LoadCodebase()
+    execute 'All ' . join(a:000, ' ')
+endfunction
+command! -nargs=* All call s:AllGrep(<f-args>)
+
+command! OpenCompanions execute 'File /' . expand('%:t:r') . '\. -' . expand('%:e')
+nmap <leader>; :let cmd = 'All ' . expand('<cword>') <bar> call histadd("cmd", cmd) <bar> execute cmd <cr>
+nnoremap \ :Code<SPACE>
+
+" ListMarks
+function! s:ListMarksCompare(i1, i2)
+    return a:i1[0] == a:i2[0] ? 0 : a:i1[0] > a:i2[0] ? 1 : -1
+endfunction
+
+function! s:ListMarks()
+    let positions = ["'a", "'b", "'c", "'d", "'e", "'f", "'g", "'h", "'i", "'j", "'k", "'l", "'m", "'n", "'o", "'p", "'q", "'r'", "'s", "'t", "'u", "'v", "'w", "'x", "'y", "'z", ".", "$"]
+
+    let founds = []
+    for position in positions
+        let line = getpos(position)[1]
+        if line != 0
+            let founds = add(founds, [line, position])
+        endif
+    endfor
+    let founds = sort(founds, "s:ListMarksCompare")
+
+    let out = "^"
+    let prev = 0
+    for found in founds
+        if found[0] != prev
+            let out .= " +" . (found[0] - prev) . " "
+        endif
+        let prev = found[0]
+
+        let position = found[1]
+        if position =~ '''\w'
+            let out .= "[" . strpart(position, 1, 1) . "]"
+        elseif position == "."
+            let out .= "^^^"
+        else
+            let out .= position
+        endif
+    endfor
+
+    echo out
+endfunction
+command! ListMarks call s:ListMarks()
+
+function! s:QuickListMarks()
+    let positions = ["'a", "'b", "'c", "'d", "'e", "'f", "'g", "'h", "'i", "'j", "'k", "'l", "'m", "'n", "'o", "'p", "'q", "'r'", "'s", "'t", "'u", "'v", "'w", "'x", "'y", "'z", ".", "$"]
+
+    let founds = []
+    for position in positions
+        let line = getpos(position)[1]
+        if line != 0
+            let founds = add(founds, [line, position])
+        endif
+    endfor
+    let founds = sort(founds, "s:ListMarksCompare")
+
+    let out = [{'bufnr':bufnr(''), 'lnum':1, 'text':'[^]: '.getline(1)}]
+    let prev = 0
+    for found in founds
+        let diff = "="
+        if found[0] != prev
+            let diff = "+" . (found[0] - prev)
+        endif
+        let prev = found[0]
+
+        let out = add(out, {'bufnr':bufnr(''), 'lnum':found[0], 'text':'['.found[1].']:'.diff.': '.getline(found[0])})
+    endfor
+
+    call setqflist(out)
+    copen
+    for found in founds
+        normal j
+        if found[1] == '.'
+            break
+        endif
+    endfor
+endfunction
+command! QuickListMarks call s:QuickListMarks()
+
