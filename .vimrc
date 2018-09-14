@@ -249,7 +249,7 @@ source $MYVIMDIR/.vimrc.functions
 
 """"""""""""
 " Colors
-
+" My favorite green for the background: 47 79 79
 colorscheme mycolors
 
 " Trailing
