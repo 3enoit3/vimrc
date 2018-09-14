@@ -250,7 +250,7 @@ source $MYVIMDIR/.vimrc.functions
 """"""""""""
 " Colors
 
-colorscheme my_colors
+colorscheme mycolors
 
 " Trailing
 highlight ExtraWhitespace ctermbg=red guibg=yellow
