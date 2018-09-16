@@ -74,7 +74,10 @@ Plug 'Shougo/unite.vim'
 Plug 'Tumbler/highlightMarks'
 
 " Buffers
-Plug 'vim-scripts/QuickBuf'
+"Plug 'vim-scripts/QuickBuf' - fixed, see plugin/my_qbuf.vim
+
+" Completion
+Plug 'Valloric/YouCompleteMe'
 
 " To see..
 
@@ -267,4 +270,7 @@ map <A-UP> <F4>
 map <A-DOWN> <F4>
 map <home> <F4>
 map <end> <F4>
+
+"" YouCOmpleteMe
+let g:ycm_confirm_extra_conf = 0
 
