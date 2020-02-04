@@ -31,7 +31,7 @@ Plug 'ervandew/supertab'
 Plug 'majutsushi/tagbar'
 
 " Colors
-" Plug 'godlygeek/csapprox'
+"Plug 'godlygeek/csapprox'
 
 
 " Most probably..
@@ -43,7 +43,7 @@ Plug 'vim-airline/vim-airline'
 "Plug 'MattesGroeger/vim-bookmarks'
 
 " Repeat motion
-" Plug 'vim-scripts/repeatable-motions.vim'
+"Plug 'vim-scripts/repeatable-motions.vim'
 
 " Surround
 Plug 'tpope/vim-surround'
@@ -76,8 +76,6 @@ Plug 'Tumbler/highlightMarks'
 " Buffers
 "Plug 'vim-scripts/QuickBuf' - fixed, see plugin/my_qbuf.vim
 
-" Completion
-Plug 'Valloric/YouCompleteMe'
 
 " To see..
 
@@ -85,16 +83,19 @@ Plug 'Valloric/YouCompleteMe'
 "Plug 'LucHermitte/VimFold4C'
 
 " Fswitch: hpp/cpp
-" Plug 'derekwyatt/vim-fswitch'
+"Plug 'derekwyatt/vim-fswitch'
 
 " Ack -> better with the shell?
 "Plug 'mileszs/ack.vim'
 
 " buffer explorer in a tab-like fashion -> home modified
-" Plug 'fholgado/minibufexpl.vim'
+"Plug 'fholgado/minibufexpl.vim'
 
 " Toggle the quickfix window -> home modified (dos2unix)
 "Plug 'vim-scripts/QFixToggle'
+
+" Completion
+"Plug 'Valloric/YouCompleteMe'
 
 
 call plug#end()
