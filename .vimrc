@@ -408,7 +408,9 @@ cmap <S-Insert> <C-R>+
 exe 'inoremap <script> <C-V>' paste#paste_cmd['i']
 exe 'vnoremap <script> <C-V>' paste#paste_cmd['v']
 
-vmap <Leader>y "+y
+" small hack to help copying from putty with shift + right click
+" vmap <Leader>y "+y
+vmap <leader>y :w !cat<cr>
 vmap <Leader>d "+d
 nmap <Leader>p "+p
 nmap <Leader>P "+P

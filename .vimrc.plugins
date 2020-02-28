@@ -36,6 +36,11 @@ Plug 'majutsushi/tagbar'
 " Colors
 " Plug 'godlygeek/csapprox'
 
+" Git
+Plug 'tpope/vim-fugitive'
+
+" Rust
+Plug 'rust-lang/rust.vim'
 
 " Most probably..
 

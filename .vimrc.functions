@@ -600,9 +600,9 @@ function! s:LoadCodebase()
         echon "Loading codebase.. "
         source ~/.vim/codebase.vim
 
-        command! -nargs=* Code py pyCodeGrep(<f-args>)
-        command! -nargs=* File py pyFileGrep(<f-args>)
-        command! -nargs=* All py pyAllGrep(<f-args>)
+        command! -nargs=* Code py3 pyCodeGrep(<f-args>)
+        command! -nargs=* File py3 pyFileGrep(<f-args>)
+        command! -nargs=* All py3 pyAllGrep(<f-args>)
     endif
     let g:CodeGrepPython_Loaded=1
 endfunction
